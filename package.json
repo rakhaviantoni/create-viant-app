@@ -1,0 +1,49 @@
+{
+  "name": "create-viant-app",
+  "version": "1.0.0",
+  "description": "Create modern React apps with Vite - choose between TypeScript or JavaScript templates with optional Tailwind CSS and PWA support",
+  "type": "module",
+  "main": "index.ts",
+  "bin": {
+    "create-viant-app": "./index.ts",
+    "viant": "./index.ts"
+  },
+  "files": [
+    "index.ts",
+    "templates",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "bun run index.ts",
+    "build": "bun build index.ts --outdir dist --target node",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "dependencies": {
+    "commander": "^11.1.0",
+    "prompts": "^2.4.2",
+    "chalk": "^5.3.0",
+    "ora": "^7.0.1",
+    "figlet": "^1.7.0",
+    "gradient-string": "^2.0.2",
+    "validate-npm-package-name": "^5.0.0",
+    "fs-extra": "^11.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "@types/figlet": "^1.5.8",
+    "@types/fs-extra": "^11.0.4",
+    "@types/gradient-string": "^1.1.5",
+    "@types/prompts": "^2.4.9",
+    "typescript": "^5.2.2"
+  },
+  "keywords": [
+    "react",
+    "vite",
+    "typescript",
+    "cli",
+    "template",
+    "scaffold"
+  ],
+  "author": "Rakha VIantoni",
+  "license": "MIT"
+}
