@@ -1,12 +1,11 @@
 {
-  "name": "viant-preact-ts-app",
+  "name": "viant-preact-js-app",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -14,8 +13,6 @@
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.8.1",
-    "@types/node": "^20.10.5",
-    "typescript": "^5.2.2",
     "vite": "^5.0.8"
   }
 }
