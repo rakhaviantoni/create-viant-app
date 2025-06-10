@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "description": "Create modern React apps with Vite - choose between TypeScript or JavaScript templates with optional Tailwind CSS and PWA support",
   "type": "module",
-  "main": "index.ts",
+  "main": "dist/index.js",
   "bin": {
-    "create-viant-app": "./index.ts",
-    "viant": "./index.ts"
+    "create-viant-app": "./dist/index.js",
+    "viant": "./dist/index.js"
   },
   "files": [
-    "index.ts",
+    "dist",
     "templates",
     "README.md"
   ],

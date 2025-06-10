@@ -1,7 +1,7 @@
-# Viant - Modern React App Builder
+# Viant - Modern Web App Builder
 
 <p align="center">
-  <img src="https://via.placeholder.com/200x200?text=Viant" alt="Viant Logo" width="200" height="200">
+  <img src="./public/create-viant-app.png" alt="Viant Logo" width="200" height="200">
 </p>
 
 <p align="center">
