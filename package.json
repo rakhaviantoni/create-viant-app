@@ -1,12 +1,11 @@
 {
   "name": "create-viant-app",
   "version": "1.0.0",
-  "description": "Create modern React apps with Vite - choose between TypeScript or JavaScript templates with optional Tailwind CSS and PWA support",
+  "description": "Create modern Web apps with Vite - choose between TypeScript or JavaScript templates with optional Tailwind CSS and PWA support",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "create-viant-app": "./dist/index.js",
-    "viant": "./dist/index.js"
+    "create-viant-app": "./dist/index.js"
   },
   "files": [
     "dist",

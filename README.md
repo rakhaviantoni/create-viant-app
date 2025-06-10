@@ -1,7 +1,7 @@
 # Viant - Modern Web App Builder
 
 <p align="center">
-  <img src="./public/create-viant-app.png" alt="Viant Logo" width="200" height="200">
+  <img src="./public/create-viant-app.png" alt="Viant Logo">
 </p>
 
 <p align="center">
