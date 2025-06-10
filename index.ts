@@ -4,20 +4,20 @@ import { execSync, spawn } from 'child_process';
 import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs';
 import pkg from 'fs-extra';
 const { copySync } = pkg;
-import { resolve, join } from 'path';
-import { fileURLToPath } from 'url';
-
+import { resolve, join, dirname } from 'path';
 import { Command } from 'commander';
 import prompts from 'prompts';
 import chalk from 'chalk';
 import ora from 'ora';
 import figlet from 'figlet';
 import gradient from 'gradient-string';
+// @ts-ignore
 import validateProjectName from 'validate-npm-package-name';
 import * as readline from 'readline';
 import { stdin, stdout, exit } from 'process';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+// Get current directory using process.cwd() as fallback
+const __dirname = process.cwd();
 
 // Enhanced ASCII Art Banner with gradients
 const createBanner = () => {
@@ -26,8 +26,9 @@ const createBanner = () => {
   });
   
   return gradient.pastel(viantText) + 
-    '\n' + gradient.vice('⚡ Modern React apps, instantly. Powered by Vite.') + 
-    '\n' + chalk.cyan('🚀 TypeScript/JavaScript • Optional: Tailwind CSS • PWA Support') + '\n';
+    '\n' + gradient.vice('⚡ Modern web apps, instantly. Multi-framework support.') + 
+    '\n' + chalk.cyan('🚀 React • Vue • Svelte • Solid • Preact • Vanilla') + 
+    '\n' + chalk.cyan('✨ TypeScript/JavaScript • Multiple styling options • Rich features') + '\n';
 };
 
 // Template definitions
@@ -38,6 +39,16 @@ interface Template {
 const templates: Template = {
   'react-ts': 'React with TypeScript: A comprehensive Vite-powered setup. Optional Tailwind CSS & PWA. (recommended)',
   'react-js': 'React with JavaScript: A minimal Vite-powered setup. Optional Tailwind CSS & PWA.',
+  'preact-ts': 'Preact with TypeScript: Lightweight React alternative (3KB). Fast and modern.',
+  'preact-js': 'Preact with JavaScript: Lightweight React alternative with minimal bundle size.',
+  'vue-ts': 'Vue 3 with TypeScript: Progressive framework with Composition API and excellent DX.',
+  'vue-js': 'Vue 3 with JavaScript: Approachable, performant & versatile framework.',
+  'svelte-ts': 'Svelte with TypeScript: Compile-time optimized framework with no virtual DOM.',
+  'svelte-js': 'Svelte with JavaScript: Truly reactive framework with minimal runtime.',
+  'solid-ts': 'Solid with TypeScript: Fine-grained reactivity with JSX. React-like but faster.',
+  'solid-js': 'Solid with JavaScript: High-performance reactive framework with JSX.',
+  'vanilla-ts': 'Vanilla TypeScript: Pure TypeScript with Vite for maximum control.',
+  'vanilla-js': 'Vanilla JavaScript: Pure JavaScript with Vite for lightweight projects.',
 };
 
 interface StylingOptions {
@@ -45,10 +56,16 @@ interface StylingOptions {
 }
 
 const stylingOptions: StylingOptions = {
-  tailwind: 'Utility-first CSS framework',
-  'styled-components': 'CSS-in-JS library',
-  'css-modules': 'Scoped CSS',
-  sass: 'CSS preprocessor'
+  tailwind: 'Utility-first CSS framework (recommended)',
+  'styled-components': 'CSS-in-JS library (React/Preact only)',
+  'emotion': 'Performant CSS-in-JS library',
+  'css-modules': 'Scoped CSS with local class names',
+  sass: 'CSS preprocessor with variables and mixins',
+  less: 'CSS preprocessor with dynamic behavior',
+  stylus: 'Expressive, dynamic CSS preprocessor',
+  'vanilla-extract': 'Zero-runtime CSS-in-TypeScript',
+  unocss: 'Instant on-demand atomic CSS engine',
+  none: 'No styling framework (plain CSS)'
 };
 
 // Feature options
@@ -63,7 +80,15 @@ const featureOptions: FeatureOption[] = [
   { name: 'GitHub Actions CI/CD', value: 'github-actions' },
   { name: 'Docker Configuration', value: 'docker' },
   { name: 'Storybook', value: 'storybook' },
-  { name: 'Husky Git Hooks', value: 'husky' }
+  { name: 'Husky Git Hooks', value: 'husky' },
+  { name: 'Vitest Testing', value: 'vitest' },
+  { name: 'Playwright E2E Testing', value: 'playwright' },
+  { name: 'ESLint + Prettier', value: 'linting' },
+  { name: 'TypeScript Strict Mode', value: 'strict-ts' },
+  { name: 'Component Library Setup', value: 'component-lib' },
+  { name: 'Internationalization (i18n)', value: 'i18n' },
+  { name: 'State Management', value: 'state-management' },
+  { name: 'API Client Setup', value: 'api-client' }
 ];
 
 // Project options interface
@@ -77,6 +102,9 @@ interface ProjectOptions {
   initGit: boolean;
   typescript: boolean;
   runDev?: boolean;
+  framework: string;
+  stateManagement?: string;
+  apiClient?: string;
 }
 
 /**
@@ -152,12 +180,21 @@ async function getProjectOptions(projectName?: string): Promise<ProjectOptions> 
     });
   }
 
-  // Template selection
+  // Framework selection
+  const frameworks = {
+    'react': 'React - A library for building user interfaces',
+    'vue': 'Vue - The Progressive JavaScript Framework',
+    'svelte': 'Svelte - Cybernetically enhanced web apps',
+    'solid': 'Solid - Simple and performant reactivity',
+    'preact': 'Preact - Fast 3kB alternative to React',
+    'vanilla': 'Vanilla - Pure JavaScript/TypeScript'
+  };
+
   questions.push({
     type: 'select',
-    name: 'template',
-    message: chalk.bold('Choose a template:'),
-    choices: Object.entries(templates).map(([value, description]) => ({
+    name: 'framework',
+    message: chalk.bold('Choose a framework:'),
+    choices: Object.entries(frameworks).map(([value, description]) => ({
       title: value,
       description,
       value
@@ -165,16 +202,34 @@ async function getProjectOptions(projectName?: string): Promise<ProjectOptions> 
     initial: 0
   });
 
-  // Styling solution
+  // TypeScript selection
+  questions.push({
+    type: 'confirm',
+    name: 'typescript',
+    message: chalk.bold('Use TypeScript?'),
+    initial: true
+  });
+
+  // Styling solution (conditional based on framework)
   questions.push({
     type: 'select',
     name: 'styling',
     message: chalk.bold('Which styling solution would you prefer?'),
-    choices: Object.entries(stylingOptions).map(([value, description]) => ({
-      title: value,
-      description,
-      value
-    })),
+    choices: (prev: any) => {
+      const framework = prev.framework;
+      let availableOptions = Object.entries(stylingOptions);
+      
+      // Filter out framework-specific options
+      if (!['react', 'preact'].includes(framework)) {
+        availableOptions = availableOptions.filter(([key]) => key !== 'styled-components');
+      }
+      
+      return availableOptions.map(([value, description]) => ({
+        title: value,
+        description,
+        value
+      }));
+    },
     initial: 0
   });
 
@@ -224,6 +279,55 @@ async function getProjectOptions(projectName?: string): Promise<ProjectOptions> 
     initial: true
   });
 
+  // State management (conditional)
+  questions.push({
+    type: (prev: any) => prev.features?.includes('state-management') ? 'select' : null,
+    name: 'stateManagement',
+    message: chalk.bold('Choose state management solution:'),
+    choices: (prev: any) => {
+      const framework = prev.framework as string;
+      const options: Record<string, { title: string; value: string }[]> = {
+        react: [
+          { title: 'Redux Toolkit', value: 'redux-toolkit' },
+          { title: 'Zustand', value: 'zustand' },
+          { title: 'Jotai', value: 'jotai' },
+          { title: 'Valtio', value: 'valtio' }
+        ],
+        vue: [
+          { title: 'Pinia', value: 'pinia' },
+          { title: 'Vuex', value: 'vuex' }
+        ],
+        svelte: [
+          { title: 'Svelte Stores', value: 'svelte-stores' },
+          { title: 'Zustand', value: 'zustand' }
+        ],
+        solid: [
+          { title: 'Solid Store', value: 'solid-store' },
+          { title: 'Zustand', value: 'zustand' }
+        ],
+        preact: [
+          { title: 'Zustand', value: 'zustand' },
+          { title: 'Valtio', value: 'valtio' }
+        ]
+      };
+      return options[framework] || [{ title: 'None', value: 'none' }];
+    }
+  });
+
+  // API Client (conditional)
+  questions.push({
+    type: (prev: any) => prev.features?.includes('api-client') ? 'select' : null,
+    name: 'apiClient',
+    message: chalk.bold('Choose API client:'),
+    choices: [
+      { title: 'Axios', value: 'axios' },
+      { title: 'TanStack Query', value: 'tanstack-query' },
+      { title: 'SWR', value: 'swr' },
+      { title: 'tRPC', value: 'trpc' },
+      { title: 'Fetch (native)', value: 'fetch' }
+    ]
+  });
+
   const response = await prompts(questions, {
     onCancel: () => {
       console.log(chalk.red('\n✖ Operation cancelled'));
@@ -231,16 +335,22 @@ async function getProjectOptions(projectName?: string): Promise<ProjectOptions> 
     }
   });
 
+  // Generate template name based on framework and TypeScript choice
+  const template = `${response.framework}-${response.typescript ? 'ts' : 'js'}`;
+
   return {
     name: projectName || response.name,
-    template: response.template,
+    template,
+    framework: response.framework,
     styling: response.styling,
     packageManager: response.packageManager,
     features: response.features || [],
     installDeps: response.installDeps,
     initGit: response.initGit,
-    typescript: true, // Always use TypeScript
-    runDev: response.runDev
+    typescript: response.typescript,
+    runDev: response.runDev,
+    stateManagement: response.stateManagement,
+    apiClient: response.apiClient
   };
 }
 
@@ -380,6 +490,7 @@ class ProjectGenerator {
    */
   private addStylingDependencies(pkg: any): void {
     pkg.devDependencies = pkg.devDependencies || {};
+    pkg.dependencies = pkg.dependencies || {};
     
     if (this.options.typescript) {
       pkg.devDependencies['ts-node'] = '^10.9.1';
@@ -387,7 +498,6 @@ class ProjectGenerator {
     
     switch (this.options.styling) {
       case 'tailwind':
-        pkg.dependencies = pkg.dependencies || {};
         pkg.dependencies.clsx = '^2.0.0';
         pkg.devDependencies.tailwindcss = '^3.3.6';
         pkg.devDependencies.autoprefixer = '^10.4.16';
@@ -395,13 +505,40 @@ class ProjectGenerator {
         break;
         
       case 'styled-components':
-        pkg.dependencies = pkg.dependencies || {};
         pkg.dependencies['styled-components'] = '^6.1.0';
-        pkg.devDependencies['@types/styled-components'] = '^5.1.32';
+        if (this.options.typescript) {
+          pkg.devDependencies['@types/styled-components'] = '^5.1.32';
+        }
+        break;
+        
+      case 'emotion':
+        pkg.dependencies['@emotion/react'] = '^11.11.1';
+        pkg.dependencies['@emotion/styled'] = '^11.11.0';
+        if (this.options.framework === 'react') {
+          pkg.devDependencies['@emotion/babel-plugin'] = '^11.11.0';
+        }
         break;
         
       case 'sass':
         pkg.devDependencies.sass = '^1.69.5';
+        break;
+        
+      case 'less':
+        pkg.devDependencies.less = '^4.2.0';
+        break;
+        
+      case 'stylus':
+        pkg.devDependencies.stylus = '^0.62.0';
+        break;
+        
+      case 'vanilla-extract':
+        pkg.devDependencies['@vanilla-extract/css'] = '^1.14.0';
+        pkg.devDependencies['@vanilla-extract/vite-plugin'] = '^3.9.0';
+        break;
+        
+      case 'unocss':
+        pkg.devDependencies.unocss = '^0.57.7';
+        pkg.devDependencies['@unocss/reset'] = '^0.57.7';
         break;
     }
   }
@@ -414,6 +551,9 @@ class ProjectGenerator {
     pkg.devDependencies = pkg.devDependencies || {};
     pkg.scripts = pkg.scripts || {};
     
+    // Framework-specific dependencies
+    this.addFrameworkDependencies(pkg);
+    
     if (this.options.features.includes('pwa')) {
       pkg.devDependencies['vite-plugin-pwa'] = '^0.17.4';
     }
@@ -423,10 +563,32 @@ class ProjectGenerator {
       pkg.scripts.analyze = 'vite-bundle-analyzer dist';
     }
     
+    if (this.options.features.includes('vitest')) {
+      pkg.devDependencies.vitest = '^1.0.4';
+      pkg.devDependencies['@vitest/ui'] = '^1.0.4';
+      pkg.scripts.test = 'vitest';
+      pkg.scripts['test:ui'] = 'vitest --ui';
+    }
+    
+    if (this.options.features.includes('playwright')) {
+      pkg.devDependencies['@playwright/test'] = '^1.40.1';
+      pkg.scripts['test:e2e'] = 'playwright test';
+    }
+    
+    if (this.options.features.includes('linting')) {
+      pkg.devDependencies.eslint = '^8.55.0';
+      pkg.devDependencies.prettier = '^3.1.0';
+      pkg.devDependencies['eslint-config-prettier'] = '^9.1.0';
+      pkg.scripts.lint = 'eslint . --ext .js,.jsx,.ts,.tsx';
+      pkg.scripts['lint:fix'] = 'eslint . --ext .js,.jsx,.ts,.tsx --fix';
+      pkg.scripts.format = 'prettier --write .';
+    }
+    
     if (this.options.features.includes('storybook')) {
+      const storybookFramework = this.getStorybookFramework();
       Object.assign(pkg.devDependencies, {
-        '@storybook/react': '^7.5.0',
-        '@storybook/react-vite': '^7.5.0',
+        [`@storybook/${storybookFramework}`]: '^7.5.0',
+        [`@storybook/${storybookFramework}-vite`]: '^7.5.0',
         '@storybook/addon-essentials': '^7.5.0'
       });
       pkg.scripts.storybook = 'storybook dev -p 6006';
@@ -437,6 +599,133 @@ class ProjectGenerator {
       pkg.devDependencies.husky = '^8.0.3';
       pkg.devDependencies['lint-staged'] = '^15.2.0';
       pkg.scripts.prepare = 'husky install';
+    }
+    
+    // State management
+    if (this.options.stateManagement) {
+      this.addStateManagementDependencies(pkg);
+    }
+    
+    // API client
+    if (this.options.apiClient) {
+      this.addApiClientDependencies(pkg);
+    }
+  }
+  
+  /**
+   * Add framework-specific dependencies
+   */
+  private addFrameworkDependencies(pkg: any): void {
+    switch (this.options.framework) {
+      case 'react':
+        pkg.dependencies.react = '^18.2.0';
+        pkg.dependencies['react-dom'] = '^18.2.0';
+        pkg.devDependencies['@vitejs/plugin-react'] = '^4.2.0';
+        if (this.options.typescript) {
+          pkg.devDependencies['@types/react'] = '^18.2.43';
+          pkg.devDependencies['@types/react-dom'] = '^18.2.17';
+        }
+        break;
+        
+      case 'preact':
+        pkg.dependencies.preact = '^10.19.2';
+        pkg.devDependencies['@preact/preset-vite'] = '^2.7.0';
+        if (this.options.typescript) {
+          pkg.devDependencies['@types/node'] = '^20.10.4';
+        }
+        break;
+        
+      case 'vue':
+        pkg.dependencies.vue = '^3.3.8';
+        pkg.devDependencies['@vitejs/plugin-vue'] = '^4.5.2';
+        if (this.options.typescript) {
+          pkg.devDependencies['vue-tsc'] = '^1.8.25';
+        }
+        break;
+        
+      case 'svelte':
+        pkg.dependencies.svelte = '^4.2.8';
+        pkg.devDependencies['@sveltejs/vite-plugin-svelte'] = '^3.0.1';
+        if (this.options.typescript) {
+          pkg.devDependencies['@tsconfig/svelte'] = '^5.0.2';
+          pkg.devDependencies.tslib = '^2.6.2';
+          pkg.devDependencies['svelte-check'] = '^3.6.2';
+        }
+        break;
+        
+      case 'solid':
+        pkg.dependencies['solid-js'] = '^1.8.7';
+        pkg.devDependencies['vite-plugin-solid'] = '^2.8.0';
+        if (this.options.typescript) {
+          pkg.devDependencies['@types/node'] = '^20.10.4';
+        }
+        break;
+    }
+  }
+  
+  /**
+   * Get Storybook framework name
+   */
+  private getStorybookFramework(): string {
+    const frameworkMap: { [key: string]: string } = {
+      'react': 'react',
+      'preact': 'preact',
+      'vue': 'vue3',
+      'svelte': 'svelte',
+      'solid': 'solid'
+    };
+    return frameworkMap[this.options.framework] || 'react';
+  }
+  
+  /**
+   * Add state management dependencies
+   */
+  private addStateManagementDependencies(pkg: any): void {
+    switch (this.options.stateManagement) {
+      case 'redux-toolkit':
+        pkg.dependencies['@reduxjs/toolkit'] = '^2.0.1';
+        pkg.dependencies['react-redux'] = '^9.0.4';
+        break;
+      case 'zustand':
+        pkg.dependencies.zustand = '^4.4.7';
+        break;
+      case 'jotai':
+        pkg.dependencies.jotai = '^2.6.0';
+        break;
+      case 'valtio':
+        pkg.dependencies.valtio = '^1.12.1';
+        break;
+      case 'pinia':
+        pkg.dependencies.pinia = '^2.1.7';
+        break;
+      case 'vuex':
+        pkg.dependencies.vuex = '^4.1.0';
+        break;
+    }
+  }
+  
+  /**
+   * Add API client dependencies
+   */
+  private addApiClientDependencies(pkg: any): void {
+    switch (this.options.apiClient) {
+      case 'axios':
+        pkg.dependencies.axios = '^1.6.2';
+        break;
+      case 'tanstack-query':
+        pkg.dependencies['@tanstack/react-query'] = '^5.12.2';
+        pkg.devDependencies['@tanstack/react-query-devtools'] = '^5.13.3';
+        break;
+      case 'swr':
+        pkg.dependencies.swr = '^2.2.4';
+        break;
+      case 'trpc':
+        pkg.dependencies['@trpc/client'] = '^10.45.0';
+        pkg.dependencies['@trpc/server'] = '^10.45.0';
+        if (this.options.framework === 'react') {
+          pkg.dependencies['@trpc/react-query'] = '^10.45.0';
+        }
+        break;
     }
   }
 
@@ -797,20 +1086,27 @@ async function main(): Promise<void> {
 
         if (projectName && options.template && options.styling && options.packageManager) {
           // Non-interactive mode
+          const framework = options.template.split('-')[0];
           projectOptions = {
             name: projectName,
             template: options.template,
+            framework: framework,
             styling: options.styling,
             packageManager: options.packageManager,
             features: [],
             installDeps: !options.skipInstall,
             initGit: !options.skipGit,
-            typescript: true,
+            typescript: options.template.includes('-ts'),
             runDev: !options.skipDev
           };
         } else {
           // Interactive mode
           projectOptions = await getProjectOptions(projectName);
+        }
+
+        // Ensure framework is set for non-interactive mode
+        if (!projectOptions.framework && projectOptions.template) {
+          projectOptions.framework = projectOptions.template.split('-')[0];
         }
 
         const generator = new ProjectGenerator(projectOptions);
