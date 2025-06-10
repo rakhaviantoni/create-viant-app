@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>Create modern React apps with Vite - choose between TypeScript or JavaScript templates with optional Tailwind CSS and PWA support</strong>
+  <strong>Create modern web apps with Vite - choose between TypeScript or JavaScript templates for React, Preact, Vue, Svelte, Solid, or Vanilla, with optional Tailwind CSS and PWA support</strong>
 </p>
 
 <p align="center">
@@ -19,7 +19,7 @@
 
 ## ✨ Introduction
 
-Viant is a modern, fast, and lightweight React template builder designed to get you up and running with a well-structured React application in seconds. It leverages the latest technologies and best practices to provide an exceptional developer experience.
+Viant is a modern, fast, and lightweight web application template builder designed to get you up and running with a well-structured application in seconds. It supports various frameworks like React, Preact, Vue, Svelte, Solid, and Vanilla JavaScript/TypeScript. It leverages the latest technologies and best practices to provide an exceptional developer experience.
 
 ## 🚀 Quick Start
 
@@ -42,7 +42,7 @@ yarn create viant-app my-awesome-app
 ### Interactive Setup
 
 The CLI will guide you through:
-- **Template Selection**: Choose between react-ts and react-js
+- **Template Selection**: Choose between react-ts, react-js, preact-ts, preact-js, vue-ts, vue-js, svelte-ts, svelte-js, solid-ts, solid-js, vanilla-ts, and vanilla-js
 - **Styling Choice**: TailwindCSS, Styled Components, CSS Modules, or Sass
 - **Package Manager**: Auto-detected or manually selected
 - **Additional Features**: PWA, Bundle Analyzer, GitHub Actions, Docker, etc.
@@ -82,6 +82,86 @@ bun create viant-app my-awesome-app --template=react-ts
 ### React + JavaScript (`react-js`)
 
 A minimal template featuring React with JavaScript (JSX), powered by Vite. Offers a lightweight setup with optional Tailwind CSS and PWA support. Ideal for simpler projects or when you prefer plain JavaScript.
+
+### Preact + TypeScript (`preact-ts`)
+
+A compact and efficient template featuring Preact with TypeScript, powered by Vite. Ideal for small, fast web applications where bundle size is critical.
+
+```bash
+bun create viant-app my-awesome-app --template=preact-ts
+```
+
+### Preact + JavaScript (`preact-js`)
+
+A lightweight template featuring Preact with JavaScript (JSX), powered by Vite. Perfect for highly optimized web experiences with minimal overhead.
+
+```bash
+bun create viant-app my-awesome-app --template=preact-js
+```
+
+### Vue + TypeScript (`vue-ts`)
+
+A robust template featuring Vue 3 with TypeScript, powered by Vite. Provides a modern setup for building scalable and maintainable Vue applications.
+
+```bash
+bun create viant-app my-awesome-app --template=vue-ts
+```
+
+### Vue + JavaScript (`vue-js`)
+
+A straightforward template featuring Vue 3 with JavaScript, powered by Vite. Great for rapid development of Vue applications without the need for TypeScript.
+
+```bash
+bun create viant-app my-awesome-app --template=vue-js
+```
+
+### Svelte + TypeScript (`svelte-ts`)
+
+A reactive template featuring Svelte with TypeScript, powered by Vite. Offers a unique compile-time approach for highly performant web applications.
+
+```bash
+bun create viant-app my-awesome-app --template=svelte-ts
+```
+
+### Svelte + JavaScript (`svelte-js`)
+
+A simple template featuring Svelte with JavaScript, powered by Vite. Ideal for building reactive user interfaces with minimal boilerplate.
+
+```bash
+bun create viant-app my-awesome-app --template=svelte-js
+```
+
+### Solid + TypeScript (`solid-ts`)
+
+A high-performance template featuring SolidJS with TypeScript, powered by Vite. Focuses on fine-grained reactivity for highly interactive user interfaces.
+
+```bash
+bun create viant-app my-awesome-app --template=solid-ts
+```
+
+### Solid + JavaScript (`solid-js`)
+
+A performant template featuring SolidJS with JavaScript (JSX), powered by Vite. Provides a reactive programming model for efficient UI development.
+
+```bash
+bun create viant-app my-awesome-app --template=solid-js
+```
+
+### Vanilla + TypeScript (`vanilla-ts`)
+
+A minimal template for plain TypeScript projects, powered by Vite. Excellent for small utilities or learning projects without a framework.
+
+```bash
+bun create viant-app my-awesome-app --template=vanilla-ts
+```
+
+### Vanilla + JavaScript (`vanilla-js`)
+
+A bare-bones template for plain JavaScript projects, powered by Vite. Perfect for simple web pages or custom setups.
+
+```bash
+bun create viant-app my-awesome-app --template=vanilla-js
+```
 
 ```bash
 bun create viant-app my-awesome-app --template=react-js
