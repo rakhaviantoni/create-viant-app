@@ -1,16 +1,25 @@
 {
-  "name": "viant-svelte-app",
-  "private": true,
-  "version": "0.0.0",
+  "name": "viant",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "biome check src",
+    "lint:fix": "biome check --write src",
+    "format": "biome format --write src"
+  },
+  "dependencies": {
+    "svelte": "^5.16.0"
   },
   "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^3.0.1",
-    "svelte": "^4.2.8",
-    "vite": "^5.0.8"
-  }
+    "@biomejs/biome": "^1.9.4",
+    "@sveltejs/vite-plugin-svelte": "^5.0.3",
+    "vite": "^6.0.7"
+  },
+  "description": "Modern Svelte app built with Viant CLI",
+  "keywords": ["svelte", "vite", "javascript"],
+  "author": "",
+  "license": "MIT"
 }

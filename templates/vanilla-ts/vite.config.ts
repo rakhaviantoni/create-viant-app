@@ -1,18 +1,28 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
+// https://vitejs.dev/config/
 export default defineConfig({
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
+      '@': resolve(__dirname, './src'),
     },
   },
-  server: {
-    port: 3000,
-    open: true,
-  },
   build: {
-    outDir: 'dist',
-    sourcemap: true,
+    target: 'esnext',
+    minify: 'esbuild',
+    cssCodeSplit: true,
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
+      },
+      treeshake: {
+        moduleSideEffects: 'no-external',
+        preset: 'recommended',
+      },
+    },
   },
 });

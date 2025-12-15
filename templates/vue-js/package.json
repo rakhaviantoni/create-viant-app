@@ -1,18 +1,25 @@
 {
-  "name": "viant-vue-app",
-  "private": true,
-  "version": "0.0.0",
+  "name": "viant",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "biome check src",
+    "lint:fix": "biome check --write src",
+    "format": "biome format --write src"
   },
   "dependencies": {
-    "vue": "^3.3.8"
+    "vue": "^3.5.13"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^4.5.2",
-    "vite": "^5.0.8"
-  }
+    "@biomejs/biome": "^1.9.4",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "vite": "^6.0.7"
+  },
+  "description": "Modern Vue app built with Viant CLI",
+  "keywords": ["vue", "vite", "javascript"],
+  "author": "",
+  "license": "MIT"
 }

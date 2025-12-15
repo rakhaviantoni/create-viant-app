@@ -9,21 +9,36 @@ import { Command } from 'commander';
 import prompts from 'prompts';
 import chalk from 'chalk';
 import ora from 'ora';
-import figlet from 'figlet';
+// Removed figlet import - using custom ASCII art instead
 import gradient from 'gradient-string';
 // @ts-ignore
 import validateProjectName from 'validate-npm-package-name';
 import * as readline from 'readline';
 import { stdin, stdout, exit } from 'process';
+import { detectPackageManagers } from './src/detectPackageManagers.js';
+import { VERSIONS } from './src/versions.js';
+import {
+  ProjectGenerationError,
+  ERROR_CODES,
+  cleanupProject,
+  formatErrorForDisplay,
+  wrapError,
+} from './src/errorHandling.js';
 
 // Get current directory using process.cwd() as fallback
 const __dirname = process.cwd();
 
 // Enhanced ASCII Art Banner with gradients
 const createBanner = () => {
-  const viantText = figlet.textSync('VIANT', {
-    font: 'Slant',
-  });
+  // Use a simple text banner instead of figlet to avoid font file dependencies
+  const viantText = `
+██╗   ██╗██╗ █████╗ ███╗   ██╗████████╗
+██║   ██║██║██╔══██╗████╗  ██║╚══██╔══╝
+██║   ██║██║███████║██╔██╗ ██║   ██║   
+╚██╗ ██╔╝██║██╔══██║██║╚██╗██║   ██║   
+ ╚████╔╝ ██║██║  ██║██║ ╚████║   ██║   
+  ╚═══╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝   
+`;
   
   return gradient.pastel(viantText) + 
     '\n' + gradient.vice('⚡ Modern web apps, instantly. Multi-framework support.') + 
@@ -124,24 +139,7 @@ function askQuestion(query: string): Promise<string> {
   });
 }
 
-/**
- * Detect available package managers
- */
-function detectPackageManagers(): string[] {
-  const managers: string[] = [];
-  const commands = ['bun', 'pnpm', 'yarn', 'npm'];
-  
-  for (const cmd of commands) {
-    try {
-      execSync(`${cmd} --version`, { stdio: 'ignore' });
-      managers.push(cmd);
-    } catch {
-      // Manager not available
-    }
-  }
-  
-  return managers.length > 0 ? managers : ['npm'];
-}
+// detectPackageManagers is imported from ./src/detectPackageManagers.js
 
 /**
  * Validate project name
@@ -409,8 +407,18 @@ class ProjectGenerator {
       }
       
     } catch (error: any) {
-      this.spinner.fail(`❌ Failed to create project: ${error.message}`);
+      this.spinner.fail('❌ Failed to create project');
+      
+      // Format and display the error with enhanced messaging
+      const wrappedError = error instanceof ProjectGenerationError 
+        ? error 
+        : wrapError(error, 'Project generation failed');
+      
+      console.error(formatErrorForDisplay(wrappedError));
+      
+      // Perform cleanup and report result
       this.cleanup();
+      
       process.exit(1);
     }
   }
@@ -420,10 +428,32 @@ class ProjectGenerator {
    */
   private validateProjectDir(): void {
     if (existsSync(this.projectPath)) {
-      throw new Error(`Directory ${this.options.name} already exists!`);
+      throw new ProjectGenerationError(
+        `Directory "${this.options.name}" already exists`,
+        ERROR_CODES.DIR_EXISTS,
+        {
+          recoverable: false,
+          hint: 'Please choose a different project name or remove the existing directory.',
+        }
+      );
     }
     
-    mkdirSync(this.projectPath, { recursive: true });
+    try {
+      mkdirSync(this.projectPath, { recursive: true });
+    } catch (error: any) {
+      if (error.code === 'EACCES') {
+        throw new ProjectGenerationError(
+          `Permission denied when creating directory "${this.options.name}"`,
+          ERROR_CODES.PERMISSION_DENIED,
+          {
+            recoverable: false,
+            hint: 'Please check your file system permissions or try a different location.',
+            cause: error,
+          }
+        );
+      }
+      throw error;
+    }
   }
 
   /**
@@ -432,6 +462,18 @@ class ProjectGenerator {
   private async copyTemplateFiles(): Promise<void> {
     this.spinner.text = `Copying ${this.options.template} template files...`;
     
+    // Check if template exists
+    if (!existsSync(this.templatePath)) {
+      throw new ProjectGenerationError(
+        `Template "${this.options.template}" not found`,
+        ERROR_CODES.TEMPLATE_NOT_FOUND,
+        {
+          recoverable: false,
+          hint: 'Please check the template name and try again. Available templates: react-ts, react-js, vue-ts, vue-js, svelte-ts, svelte-js, solid-ts, solid-js, preact-ts, preact-js, vanilla-ts, vanilla-js',
+        }
+      );
+    }
+    
     try {
       copySync(this.templatePath, this.projectPath);
       
@@ -439,9 +481,157 @@ class ProjectGenerator {
       if (existsSync(stylingPath)) {
         copySync(stylingPath, this.projectPath);
       }
+      
+      // Ensure project structure is correct
+      this.ensureProjectStructure();
+      
+      // Generate .gitignore file
+      this.generateGitignore();
     } catch (error: any) {
-      throw new Error(`Failed to copy template files: ${error.message}`);
+      if (error instanceof ProjectGenerationError) {
+        throw error;
+      }
+      
+      throw new ProjectGenerationError(
+        `Failed to copy template files: ${error.message}`,
+        ERROR_CODES.COPY_FAILED,
+        {
+          recoverable: false,
+          hint: 'Please check file permissions and available disk space.',
+          cause: error,
+        }
+      );
     }
+  }
+
+  /**
+   * Ensure project structure has required directories
+   * Creates src/ directory with appropriate subdirectories if they don't exist
+   */
+  private ensureProjectStructure(): void {
+    const srcPath = join(this.projectPath, 'src');
+    
+    // Ensure src directory exists
+    if (!existsSync(srcPath)) {
+      mkdirSync(srcPath, { recursive: true });
+    }
+    
+    // Define subdirectories based on framework
+    const subdirectories: string[] = [];
+    
+    switch (this.options.framework) {
+      case 'react':
+      case 'preact':
+      case 'solid':
+        subdirectories.push('components', 'hooks', 'utils');
+        if (this.options.typescript) {
+          subdirectories.push('types');
+        }
+        break;
+      case 'vue':
+        subdirectories.push('components', 'composables', 'utils');
+        if (this.options.typescript) {
+          subdirectories.push('types');
+        }
+        break;
+      case 'svelte':
+        subdirectories.push('lib', 'components', 'utils');
+        if (this.options.typescript) {
+          subdirectories.push('types');
+        }
+        break;
+      case 'vanilla':
+        subdirectories.push('utils');
+        if (this.options.typescript) {
+          subdirectories.push('types');
+        }
+        break;
+    }
+    
+    // Create subdirectories if they don't exist
+    for (const subdir of subdirectories) {
+      const subdirPath = join(srcPath, subdir);
+      if (!existsSync(subdirPath)) {
+        mkdirSync(subdirPath, { recursive: true });
+        // Add a .gitkeep file to preserve empty directories
+        writeFileSync(join(subdirPath, '.gitkeep'), '');
+      }
+    }
+  }
+
+  /**
+   * Generate .gitignore file for the project
+   */
+  private generateGitignore(): void {
+    const gitignorePath = join(this.projectPath, '.gitignore');
+    
+    // Don't overwrite if .gitignore already exists
+    if (existsSync(gitignorePath)) {
+      return;
+    }
+    
+    const gitignoreContent = `# Dependency directories
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env*.local
+
+# IDE and editor files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Lock files (uncomment if you want to ignore)
+# bun.lockb
+# pnpm-lock.yaml
+# package-lock.json
+# yarn.lock
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Vite cache
+.vite/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Temporary files
+*.tmp
+*.bak
+*.temp
+`;
+
+    writeFileSync(gitignorePath, gitignoreContent);
   }
 
   /**
@@ -463,6 +653,8 @@ class ProjectGenerator {
 
   /**
    * Customize package.json
+   * Ensures all required fields are present, "type": "module" is set,
+   * and validates JSON structure before writing.
    */
   private customizePackageJson(): void {
     const packageJsonPath = join(this.projectPath, 'package.json');
@@ -471,17 +663,87 @@ class ProjectGenerator {
       try {
         const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
         
+        // Ensure required fields are present
         packageJson.name = this.options.name;
+        packageJson.version = packageJson.version || '1.0.0';
+        packageJson.type = 'module'; // Always ensure ESM modules
+        packageJson.scripts = packageJson.scripts || {};
+        packageJson.dependencies = packageJson.dependencies || {};
+        packageJson.devDependencies = packageJson.devDependencies || {};
+        
+        // Add optional metadata fields if not present
+        if (!packageJson.description) {
+          packageJson.description = `Modern ${this.options.framework} app built with Viant CLI`;
+        }
+        if (!packageJson.license) {
+          packageJson.license = 'MIT';
+        }
+        
         this.addStylingDependencies(packageJson);
         this.addFeatureDependencies(packageJson);
         
-        writeFileSync(
-          packageJsonPath,
-          JSON.stringify(packageJson, null, 2)
-        );
+        // Validate JSON structure before writing
+        const jsonString = JSON.stringify(packageJson, null, 2);
+        this.validatePackageJson(packageJson);
+        
+        writeFileSync(packageJsonPath, jsonString);
       } catch (error: any) {
-        throw new Error(`Failed to customize package.json: ${error.message}`);
+        if (error instanceof ProjectGenerationError) {
+          throw error;
+        }
+        
+        throw new ProjectGenerationError(
+          `Failed to customize package.json: ${error.message}`,
+          ERROR_CODES.PACKAGE_JSON_INVALID,
+          {
+            recoverable: false,
+            hint: 'The package.json file may be corrupted or have invalid JSON syntax.',
+            cause: error,
+          }
+        );
       }
+    }
+  }
+
+  /**
+   * Validate package.json structure
+   * Ensures all required fields are present and valid
+   */
+  private validatePackageJson(pkg: any): void {
+    const requiredFields = ['name', 'version', 'type', 'scripts', 'dependencies', 'devDependencies'];
+    
+    for (const field of requiredFields) {
+      if (pkg[field] === undefined) {
+        throw new Error(`Missing required field in package.json: ${field}`);
+      }
+    }
+    
+    // Validate name is a non-empty string
+    if (typeof pkg.name !== 'string' || pkg.name.trim() === '') {
+      throw new Error('package.json name must be a non-empty string');
+    }
+    
+    // Validate version is a string
+    if (typeof pkg.version !== 'string') {
+      throw new Error('package.json version must be a string');
+    }
+    
+    // Validate type is "module"
+    if (pkg.type !== 'module') {
+      throw new Error('package.json type must be "module" for ESM support');
+    }
+    
+    // Validate scripts, dependencies, and devDependencies are objects
+    if (typeof pkg.scripts !== 'object' || pkg.scripts === null) {
+      throw new Error('package.json scripts must be an object');
+    }
+    
+    if (typeof pkg.dependencies !== 'object' || pkg.dependencies === null) {
+      throw new Error('package.json dependencies must be an object');
+    }
+    
+    if (typeof pkg.devDependencies !== 'object' || pkg.devDependencies === null) {
+      throw new Error('package.json devDependencies must be an object');
     }
   }
 
@@ -498,29 +760,28 @@ class ProjectGenerator {
     
     switch (this.options.styling) {
       case 'tailwind':
+        // Tailwind CSS 4 uses CSS-first configuration - no postcss/autoprefixer needed
         pkg.dependencies.clsx = '^2.0.0';
-        pkg.devDependencies.tailwindcss = '^3.3.6';
-        pkg.devDependencies.autoprefixer = '^10.4.16';
-        pkg.devDependencies.postcss = '^8.4.32';
+        pkg.devDependencies.tailwindcss = VERSIONS.tailwindcss;
         break;
         
       case 'styled-components':
-        pkg.dependencies['styled-components'] = '^6.1.0';
+        pkg.dependencies['styled-components'] = VERSIONS.styledComponents;
         if (this.options.typescript) {
           pkg.devDependencies['@types/styled-components'] = '^5.1.32';
         }
         break;
         
       case 'emotion':
-        pkg.dependencies['@emotion/react'] = '^11.11.1';
-        pkg.dependencies['@emotion/styled'] = '^11.11.0';
+        pkg.dependencies['@emotion/react'] = VERSIONS.emotion;
+        pkg.dependencies['@emotion/styled'] = VERSIONS.emotionStyled;
         if (this.options.framework === 'react') {
           pkg.devDependencies['@emotion/babel-plugin'] = '^11.11.0';
         }
         break;
         
       case 'sass':
-        pkg.devDependencies.sass = '^1.69.5';
+        pkg.devDependencies.sass = VERSIONS.sass;
         break;
         
       case 'less':
@@ -532,13 +793,13 @@ class ProjectGenerator {
         break;
         
       case 'vanilla-extract':
-        pkg.devDependencies['@vanilla-extract/css'] = '^1.14.0';
-        pkg.devDependencies['@vanilla-extract/vite-plugin'] = '^3.9.0';
+        pkg.devDependencies['@vanilla-extract/css'] = VERSIONS.vanillaExtract;
+        pkg.devDependencies['@vanilla-extract/vite-plugin'] = VERSIONS.vanillaExtractVitePlugin;
         break;
         
       case 'unocss':
-        pkg.devDependencies.unocss = '^0.57.7';
-        pkg.devDependencies['@unocss/reset'] = '^0.57.7';
+        pkg.devDependencies.unocss = VERSIONS.unocss;
+        pkg.devDependencies['@unocss/reset'] = VERSIONS.unocss;
         break;
     }
   }
@@ -555,50 +816,53 @@ class ProjectGenerator {
     this.addFrameworkDependencies(pkg);
     
     if (this.options.features.includes('pwa')) {
-      pkg.devDependencies['vite-plugin-pwa'] = '^0.17.4';
+      pkg.devDependencies['vite-plugin-pwa'] = VERSIONS.vitePluginPWA;
     }
     
     if (this.options.features.includes('analyzer')) {
-      pkg.devDependencies['vite-bundle-analyzer'] = '^0.7.0';
-      pkg.scripts.analyze = 'vite-bundle-analyzer dist';
+      pkg.devDependencies['rollup-plugin-visualizer'] = VERSIONS.rollupPluginVisualizer;
+      pkg.scripts.analyze = 'vite build --mode analyze';
     }
     
     if (this.options.features.includes('vitest')) {
-      pkg.devDependencies.vitest = '^1.0.4';
-      pkg.devDependencies['@vitest/ui'] = '^1.0.4';
+      pkg.devDependencies.vitest = VERSIONS.vitest;
+      pkg.devDependencies['@vitest/ui'] = VERSIONS.vitestUi;
       pkg.scripts.test = 'vitest';
       pkg.scripts['test:ui'] = 'vitest --ui';
     }
     
     if (this.options.features.includes('playwright')) {
-      pkg.devDependencies['@playwright/test'] = '^1.40.1';
+      pkg.devDependencies['@playwright/test'] = VERSIONS.playwright;
       pkg.scripts['test:e2e'] = 'playwright test';
     }
     
     if (this.options.features.includes('linting')) {
-      pkg.devDependencies.eslint = '^8.55.0';
-      pkg.devDependencies.prettier = '^3.1.0';
-      pkg.devDependencies['eslint-config-prettier'] = '^9.1.0';
-      pkg.scripts.lint = 'eslint . --ext .js,.jsx,.ts,.tsx';
-      pkg.scripts['lint:fix'] = 'eslint . --ext .js,.jsx,.ts,.tsx --fix';
-      pkg.scripts.format = 'prettier --write .';
+      pkg.devDependencies['@biomejs/biome'] = VERSIONS.biome;
+      pkg.scripts.lint = 'biome lint .';
+      pkg.scripts['lint:fix'] = 'biome lint --write .';
+      pkg.scripts.format = 'biome format --write .';
     }
     
     if (this.options.features.includes('storybook')) {
       const storybookFramework = this.getStorybookFramework();
       Object.assign(pkg.devDependencies, {
-        [`@storybook/${storybookFramework}`]: '^7.5.0',
-        [`@storybook/${storybookFramework}-vite`]: '^7.5.0',
-        '@storybook/addon-essentials': '^7.5.0'
+        [`@storybook/${storybookFramework}`]: VERSIONS.storybook,
+        [`@storybook/${storybookFramework}-vite`]: VERSIONS.storybook,
+        '@storybook/addon-essentials': VERSIONS.storybook
       });
       pkg.scripts.storybook = 'storybook dev -p 6006';
       pkg.scripts['build-storybook'] = 'storybook build';
     }
     
     if (this.options.features.includes('husky')) {
-      pkg.devDependencies.husky = '^8.0.3';
-      pkg.devDependencies['lint-staged'] = '^15.2.0';
+      pkg.devDependencies.husky = VERSIONS.husky;
+      pkg.devDependencies['lint-staged'] = VERSIONS.lintStaged;
       pkg.scripts.prepare = 'husky install';
+    }
+
+    // Internationalization (i18n)
+    if (this.options.features.includes('i18n')) {
+      this.addI18nDependencies(pkg);
     }
     
     // State management
@@ -618,46 +882,46 @@ class ProjectGenerator {
   private addFrameworkDependencies(pkg: any): void {
     switch (this.options.framework) {
       case 'react':
-        pkg.dependencies.react = '^18.2.0';
-        pkg.dependencies['react-dom'] = '^18.2.0';
-        pkg.devDependencies['@vitejs/plugin-react'] = '^4.2.0';
+        pkg.dependencies.react = VERSIONS.react;
+        pkg.dependencies['react-dom'] = VERSIONS.reactDom;
+        pkg.devDependencies['@vitejs/plugin-react-swc'] = VERSIONS.vitePluginReactSWC;
         if (this.options.typescript) {
-          pkg.devDependencies['@types/react'] = '^18.2.43';
-          pkg.devDependencies['@types/react-dom'] = '^18.2.17';
+          pkg.devDependencies['@types/react'] = VERSIONS.typesReact;
+          pkg.devDependencies['@types/react-dom'] = VERSIONS.typesReactDom;
         }
         break;
         
       case 'preact':
-        pkg.dependencies.preact = '^10.19.2';
-        pkg.devDependencies['@preact/preset-vite'] = '^2.7.0';
+        pkg.dependencies.preact = VERSIONS.preact;
+        pkg.devDependencies['@preact/preset-vite'] = VERSIONS.preactPresetVite;
         if (this.options.typescript) {
-          pkg.devDependencies['@types/node'] = '^20.10.4';
+          pkg.devDependencies['@types/node'] = VERSIONS.typesNode;
         }
         break;
         
       case 'vue':
-        pkg.dependencies.vue = '^3.3.8';
-        pkg.devDependencies['@vitejs/plugin-vue'] = '^4.5.2';
+        pkg.dependencies.vue = VERSIONS.vue;
+        pkg.devDependencies['@vitejs/plugin-vue'] = VERSIONS.vitePluginVue;
         if (this.options.typescript) {
-          pkg.devDependencies['vue-tsc'] = '^1.8.25';
+          pkg.devDependencies['vue-tsc'] = VERSIONS.vueTsc;
         }
         break;
         
       case 'svelte':
-        pkg.dependencies.svelte = '^4.2.8';
-        pkg.devDependencies['@sveltejs/vite-plugin-svelte'] = '^3.0.1';
+        pkg.dependencies.svelte = VERSIONS.svelte;
+        pkg.devDependencies['@sveltejs/vite-plugin-svelte'] = VERSIONS.vitePluginSvelte;
         if (this.options.typescript) {
-          pkg.devDependencies['@tsconfig/svelte'] = '^5.0.2';
-          pkg.devDependencies.tslib = '^2.6.2';
-          pkg.devDependencies['svelte-check'] = '^3.6.2';
+          pkg.devDependencies['@tsconfig/svelte'] = VERSIONS.tsconfigSvelte;
+          pkg.devDependencies.tslib = VERSIONS.tslib;
+          pkg.devDependencies['svelte-check'] = VERSIONS.svelteCheck;
         }
         break;
         
       case 'solid':
-        pkg.dependencies['solid-js'] = '^1.8.7';
-        pkg.devDependencies['vite-plugin-solid'] = '^2.8.0';
+        pkg.dependencies['solid-js'] = VERSIONS.solid;
+        pkg.devDependencies['vite-plugin-solid'] = VERSIONS.vitePluginSolid;
         if (this.options.typescript) {
-          pkg.devDependencies['@types/node'] = '^20.10.4';
+          pkg.devDependencies['@types/node'] = VERSIONS.typesNode;
         }
         break;
     }
@@ -683,20 +947,20 @@ class ProjectGenerator {
   private addStateManagementDependencies(pkg: any): void {
     switch (this.options.stateManagement) {
       case 'redux-toolkit':
-        pkg.dependencies['@reduxjs/toolkit'] = '^2.0.1';
-        pkg.dependencies['react-redux'] = '^9.0.4';
+        pkg.dependencies['@reduxjs/toolkit'] = VERSIONS.reduxToolkit;
+        pkg.dependencies['react-redux'] = VERSIONS.reactRedux;
         break;
       case 'zustand':
-        pkg.dependencies.zustand = '^4.4.7';
+        pkg.dependencies.zustand = VERSIONS.zustand;
         break;
       case 'jotai':
-        pkg.dependencies.jotai = '^2.6.0';
+        pkg.dependencies.jotai = VERSIONS.jotai;
         break;
       case 'valtio':
-        pkg.dependencies.valtio = '^1.12.1';
+        pkg.dependencies.valtio = VERSIONS.valtio;
         break;
       case 'pinia':
-        pkg.dependencies.pinia = '^2.1.7';
+        pkg.dependencies.pinia = VERSIONS.pinia;
         break;
       case 'vuex':
         pkg.dependencies.vuex = '^4.1.0';
@@ -710,14 +974,14 @@ class ProjectGenerator {
   private addApiClientDependencies(pkg: any): void {
     switch (this.options.apiClient) {
       case 'axios':
-        pkg.dependencies.axios = '^1.6.2';
+        pkg.dependencies.axios = VERSIONS.axios;
         break;
       case 'tanstack-query':
-        pkg.dependencies['@tanstack/react-query'] = '^5.12.2';
-        pkg.devDependencies['@tanstack/react-query-devtools'] = '^5.13.3';
+        pkg.dependencies['@tanstack/react-query'] = VERSIONS.tanstackQuery;
+        pkg.devDependencies['@tanstack/react-query-devtools'] = VERSIONS.tanstackQueryDevtools;
         break;
       case 'swr':
-        pkg.dependencies.swr = '^2.2.4';
+        pkg.dependencies.swr = VERSIONS.swr;
         break;
       case 'trpc':
         pkg.dependencies['@trpc/client'] = '^10.45.0';
@@ -730,27 +994,43 @@ class ProjectGenerator {
   }
 
   /**
+   * Add internationalization (i18n) dependencies based on framework
+   */
+  private addI18nDependencies(pkg: any): void {
+    switch (this.options.framework) {
+      case 'react':
+      case 'preact':
+        pkg.dependencies['react-i18next'] = VERSIONS.reactI18next;
+        pkg.dependencies['i18next'] = VERSIONS.i18next;
+        break;
+      case 'vue':
+        pkg.dependencies['vue-i18n'] = VERSIONS.vueI18n;
+        break;
+      case 'svelte':
+        pkg.dependencies['svelte-i18n'] = '^4.0.1';
+        break;
+      case 'solid':
+        // Solid uses a simple custom implementation, no external dependency needed
+        // Or can use @solid-primitives/i18n
+        pkg.dependencies['@solid-primitives/i18n'] = '^2.1.1';
+        break;
+      default:
+        // Vanilla JS - no external dependency needed, uses custom implementation
+        break;
+    }
+  }
+
+  /**
    * Add styling configurations
    */
   private addStylingConfigs(): void {
     const configExt = 'ts';
     const cssPath = join(this.projectPath, 'src/index.css');
     
-    if (['tailwind', 'css-modules', 'sass'].includes(this.options.styling)) {
-      const configContent = this.options.styling === 'tailwind' 
-        ? `import type { Config } from 'postcss-load-config';
-import tailwindcss from 'tailwindcss';
-import autoprefixer from 'autoprefixer';
-
-const config: Config = {
-  plugins: [
-    tailwindcss,
-    autoprefixer,
-  ],
-};
-
-export default config;`
-        : `import type { Config } from 'postcss-load-config';
+    // Tailwind CSS 4 uses CSS-first configuration - no postcss.config needed
+    // Only add postcss config for non-tailwind styling options that need it
+    if (['css-modules', 'sass'].includes(this.options.styling)) {
+      const configContent = `import type { Config } from 'postcss-load-config';
 import autoprefixer from 'autoprefixer';
 
 const config: Config = {
@@ -769,22 +1049,14 @@ export default config;`;
     
     switch (this.options.styling) {
       case 'tailwind':
-        writeFileSync(
-          join(this.projectPath, `tailwind.config.${configExt}`),
-          `/** @type {import('tailwindcss').Config} */
-export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
-  theme: { extend: {} },
-  plugins: [],
-}`
-        );
-        
-        writeFileSync(cssPath, `@tailwind base;
-@tailwind components;
-@tailwind utilities;`);
+        // Tailwind CSS 4 uses CSS-first configuration
+        // No tailwind.config.js needed - configuration is done in CSS
+        writeFileSync(cssPath, `@import "tailwindcss";
+
+/* Custom styles can be added below */
+/* Tailwind CSS 4 uses CSS-first configuration */
+/* See: https://tailwindcss.com/docs/v4-beta */
+`);
         break;
         
       case 'styled-components':
@@ -843,6 +1115,18 @@ $spacing-unit: 1rem;
    * Add feature configurations
    */
   private addFeatureConfigs(): void {
+    if (this.options.features.includes('pwa')) {
+      this.addPWAConfig();
+    }
+
+    if (this.options.features.includes('analyzer')) {
+      this.addBundleAnalyzerConfig();
+    }
+
+    if (this.options.features.includes('i18n')) {
+      this.addI18nConfig();
+    }
+
     if (this.options.features.includes('github-actions')) {
       const workflowsDir = join(this.projectPath, '.github/workflows');
       mkdirSync(workflowsDir, { recursive: true });
@@ -898,6 +1182,617 @@ npm-debug.log`;
 
       writeFileSync(join(this.projectPath, '.dockerignore'), dockerIgnore);
     }
+
+    // Add strict TypeScript configuration when strict-ts feature is selected
+    if (this.options.features.includes('strict-ts') && this.options.typescript) {
+      this.addStrictTypeScriptConfig();
+    }
+  }
+
+  /**
+   * Add strict TypeScript configuration
+   * Adds noUncheckedIndexedAccess and exactOptionalPropertyTypes to tsconfig.json
+   */
+  private addStrictTypeScriptConfig(): void {
+    const tsconfigPath = join(this.projectPath, 'tsconfig.json');
+    
+    if (existsSync(tsconfigPath)) {
+      try {
+        const tsconfigContent = readFileSync(tsconfigPath, 'utf8');
+        const tsconfig = JSON.parse(tsconfigContent);
+        
+        // Ensure compilerOptions exists
+        tsconfig.compilerOptions = tsconfig.compilerOptions || {};
+        
+        // Add additional strict flags
+        tsconfig.compilerOptions.noUncheckedIndexedAccess = true;
+        tsconfig.compilerOptions.exactOptionalPropertyTypes = true;
+        
+        writeFileSync(
+          tsconfigPath,
+          JSON.stringify(tsconfig, null, 2)
+        );
+      } catch (error: any) {
+        console.warn(`Warning: Could not update tsconfig.json with strict-ts settings: ${error.message}`);
+      }
+    }
+  }
+
+  /**
+   * Add PWA configuration with Workbox for offline support
+   * Configures vite-plugin-pwa with service worker and manifest
+   */
+  private addPWAConfig(): void {
+    // Create PWA manifest file
+    const manifestContent = {
+      name: this.options.name,
+      short_name: this.options.name,
+      description: `${this.options.name} - A Progressive Web App`,
+      theme_color: '#ffffff',
+      background_color: '#ffffff',
+      display: 'standalone',
+      scope: '/',
+      start_url: '/',
+      icons: [
+        {
+          src: '/pwa-192x192.png',
+          sizes: '192x192',
+          type: 'image/png'
+        },
+        {
+          src: '/pwa-512x512.png',
+          sizes: '512x512',
+          type: 'image/png'
+        },
+        {
+          src: '/pwa-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any maskable'
+        }
+      ]
+    };
+
+    const publicDir = join(this.projectPath, 'public');
+    if (!existsSync(publicDir)) {
+      mkdirSync(publicDir, { recursive: true });
+    }
+
+    writeFileSync(
+      join(publicDir, 'manifest.json'),
+      JSON.stringify(manifestContent, null, 2)
+    );
+
+    // Update vite.config to include PWA plugin
+    this.updateViteConfigForPWA();
+  }
+
+  /**
+   * Update vite.config file to include PWA plugin configuration
+   */
+  private updateViteConfigForPWA(): void {
+    const ext = this.options.typescript ? 'ts' : 'js';
+    const viteConfigPath = join(this.projectPath, `vite.config.${ext}`);
+
+    if (!existsSync(viteConfigPath)) {
+      return;
+    }
+
+    try {
+      let viteConfig = readFileSync(viteConfigPath, 'utf8');
+
+      // Add PWA import if not present
+      if (!viteConfig.includes('vite-plugin-pwa')) {
+        // Add import at the top after other imports
+        const importStatement = `import { VitePWA } from 'vite-plugin-pwa';\n`;
+        
+        // Find the last import statement and add after it
+        const importRegex = /^import .+ from .+;?\n/gm;
+        let lastImportMatch: RegExpExecArray | null = null;
+        let match: RegExpExecArray | null;
+        
+        while ((match = importRegex.exec(viteConfig)) !== null) {
+          lastImportMatch = match;
+        }
+
+        if (lastImportMatch) {
+          const insertPosition = lastImportMatch.index + lastImportMatch[0].length;
+          viteConfig = viteConfig.slice(0, insertPosition) + importStatement + viteConfig.slice(insertPosition);
+        } else {
+          // No imports found, add at the beginning
+          viteConfig = importStatement + viteConfig;
+        }
+
+        // Add PWA plugin to the plugins array
+        const pwaPluginConfig = `
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      manifest: {
+        name: '${this.options.name}',
+        short_name: '${this.options.name}',
+        description: '${this.options.name} - A Progressive Web App',
+        theme_color: '#ffffff',
+        icons: [
+          {
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png'
+          }
+        ]
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\\/\\/fonts\\.googleapis\\.com\\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\\/\\/fonts\\.gstatic\\.com\\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'gstatic-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          }
+        ]
+      }
+    }),`;
+
+        // Find the plugins array and add PWA plugin
+        const pluginsRegex = /plugins:\s*\[/;
+        const pluginsMatch = viteConfig.match(pluginsRegex);
+        
+        if (pluginsMatch && pluginsMatch.index !== undefined) {
+          const insertPosition = pluginsMatch.index + pluginsMatch[0].length;
+          viteConfig = viteConfig.slice(0, insertPosition) + pwaPluginConfig + viteConfig.slice(insertPosition);
+        }
+
+        writeFileSync(viteConfigPath, viteConfig);
+      }
+    } catch (error: any) {
+      console.warn(`Warning: Could not update vite.config for PWA: ${error.message}`);
+    }
+  }
+
+  /**
+   * Add bundle analyzer configuration
+   * Configures rollup-plugin-visualizer for bundle analysis
+   */
+  private addBundleAnalyzerConfig(): void {
+    const ext = this.options.typescript ? 'ts' : 'js';
+    const viteConfigPath = join(this.projectPath, `vite.config.${ext}`);
+
+    if (!existsSync(viteConfigPath)) {
+      return;
+    }
+
+    try {
+      let viteConfig = readFileSync(viteConfigPath, 'utf8');
+
+      // Add visualizer import if not present
+      if (!viteConfig.includes('rollup-plugin-visualizer')) {
+        const importStatement = `import { visualizer } from 'rollup-plugin-visualizer';\n`;
+        
+        // Find the last import statement and add after it
+        const importRegex = /^import .+ from .+;?\n/gm;
+        let lastImportMatch: RegExpExecArray | null = null;
+        let match: RegExpExecArray | null;
+        
+        while ((match = importRegex.exec(viteConfig)) !== null) {
+          lastImportMatch = match;
+        }
+
+        if (lastImportMatch) {
+          const insertPosition = lastImportMatch.index + lastImportMatch[0].length;
+          viteConfig = viteConfig.slice(0, insertPosition) + importStatement + viteConfig.slice(insertPosition);
+        } else {
+          viteConfig = importStatement + viteConfig;
+        }
+
+        // Add visualizer plugin to the plugins array (only in analyze mode)
+        const visualizerPluginConfig = `
+    ...(process.env.ANALYZE === 'true' ? [visualizer({
+      filename: 'dist/stats.html',
+      open: true,
+      gzipSize: true,
+      brotliSize: true,
+      template: 'treemap'
+    })] : []),`;
+
+        // Find the plugins array and add visualizer plugin
+        const pluginsRegex = /plugins:\s*\[/;
+        const pluginsMatch = viteConfig.match(pluginsRegex);
+        
+        if (pluginsMatch && pluginsMatch.index !== undefined) {
+          const insertPosition = pluginsMatch.index + pluginsMatch[0].length;
+          viteConfig = viteConfig.slice(0, insertPosition) + visualizerPluginConfig + viteConfig.slice(insertPosition);
+        }
+
+        writeFileSync(viteConfigPath, viteConfig);
+      }
+    } catch (error: any) {
+      console.warn(`Warning: Could not update vite.config for bundle analyzer: ${error.message}`);
+    }
+  }
+
+  /**
+   * Add internationalization (i18n) configuration
+   * Configures appropriate i18n library based on framework
+   */
+  private addI18nConfig(): void {
+    const srcPath = join(this.projectPath, 'src');
+    const i18nDir = join(srcPath, 'i18n');
+    const localesDir = join(i18nDir, 'locales');
+
+    // Create i18n directories
+    mkdirSync(localesDir, { recursive: true });
+
+    // Create default locale files
+    const enTranslations = {
+      common: {
+        welcome: 'Welcome',
+        hello: 'Hello',
+        goodbye: 'Goodbye'
+      },
+      app: {
+        title: this.options.name,
+        description: `Welcome to ${this.options.name}`
+      }
+    };
+
+    const esTranslations = {
+      common: {
+        welcome: 'Bienvenido',
+        hello: 'Hola',
+        goodbye: 'Adiós'
+      },
+      app: {
+        title: this.options.name,
+        description: `Bienvenido a ${this.options.name}`
+      }
+    };
+
+    writeFileSync(
+      join(localesDir, 'en.json'),
+      JSON.stringify(enTranslations, null, 2)
+    );
+
+    writeFileSync(
+      join(localesDir, 'es.json'),
+      JSON.stringify(esTranslations, null, 2)
+    );
+
+    // Create framework-specific i18n configuration
+    switch (this.options.framework) {
+      case 'react':
+      case 'preact':
+        this.createReactI18nConfig(i18nDir);
+        break;
+      case 'vue':
+        this.createVueI18nConfig(i18nDir);
+        break;
+      case 'svelte':
+        this.createSvelteI18nConfig(i18nDir);
+        break;
+      case 'solid':
+        this.createSolidI18nConfig(i18nDir);
+        break;
+      default:
+        this.createVanillaI18nConfig(i18nDir);
+        break;
+    }
+  }
+
+  /**
+   * Create React/Preact i18n configuration using react-i18next
+   */
+  private createReactI18nConfig(i18nDir: string): void {
+    const ext = this.options.typescript ? 'ts' : 'js';
+    
+    const i18nConfig = `import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+
+import en from './locales/en.json';
+import es from './locales/es.json';
+
+const resources = {
+  en: { translation: en },
+  es: { translation: es }
+};
+
+i18n
+  .use(initReactI18next)
+  .init({
+    resources,
+    lng: 'en',
+    fallbackLng: 'en',
+    interpolation: {
+      escapeValue: false
+    }
+  });
+
+export default i18n;
+`;
+
+    writeFileSync(join(i18nDir, `index.${ext}`), i18nConfig);
+
+    // Create a hook for using translations
+    const useTranslationHook = this.options.typescript
+      ? `import { useTranslation as useI18nTranslation } from 'react-i18next';
+
+export const useTranslation = () => {
+  const { t, i18n } = useI18nTranslation();
+  
+  const changeLanguage = (lng: string) => {
+    i18n.changeLanguage(lng);
+  };
+
+  return { t, i18n, changeLanguage };
+};
+`
+      : `import { useTranslation as useI18nTranslation } from 'react-i18next';
+
+export const useTranslation = () => {
+  const { t, i18n } = useI18nTranslation();
+  
+  const changeLanguage = (lng) => {
+    i18n.changeLanguage(lng);
+  };
+
+  return { t, i18n, changeLanguage };
+};
+`;
+
+    const hooksDir = join(this.projectPath, 'src', 'hooks');
+    if (!existsSync(hooksDir)) {
+      mkdirSync(hooksDir, { recursive: true });
+    }
+    writeFileSync(join(hooksDir, `useTranslation.${ext}`), useTranslationHook);
+  }
+
+  /**
+   * Create Vue i18n configuration using vue-i18n
+   */
+  private createVueI18nConfig(i18nDir: string): void {
+    const ext = this.options.typescript ? 'ts' : 'js';
+    
+    const i18nConfig = `import { createI18n } from 'vue-i18n';
+
+import en from './locales/en.json';
+import es from './locales/es.json';
+
+const messages = {
+  en,
+  es
+};
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  fallbackLocale: 'en',
+  messages
+});
+
+export default i18n;
+`;
+
+    writeFileSync(join(i18nDir, `index.${ext}`), i18nConfig);
+
+    // Create a composable for using translations
+    const useI18nComposable = this.options.typescript
+      ? `import { useI18n as useVueI18n } from 'vue-i18n';
+
+export const useTranslation = () => {
+  const { t, locale } = useVueI18n();
+  
+  const changeLanguage = (lng: string) => {
+    locale.value = lng;
+  };
+
+  return { t, locale, changeLanguage };
+};
+`
+      : `import { useI18n as useVueI18n } from 'vue-i18n';
+
+export const useTranslation = () => {
+  const { t, locale } = useVueI18n();
+  
+  const changeLanguage = (lng) => {
+    locale.value = lng;
+  };
+
+  return { t, locale, changeLanguage };
+};
+`;
+
+    const composablesDir = join(this.projectPath, 'src', 'composables');
+    if (!existsSync(composablesDir)) {
+      mkdirSync(composablesDir, { recursive: true });
+    }
+    writeFileSync(join(composablesDir, `useTranslation.${ext}`), useI18nComposable);
+  }
+
+  /**
+   * Create Svelte i18n configuration using svelte-i18n
+   */
+  private createSvelteI18nConfig(i18nDir: string): void {
+    const ext = this.options.typescript ? 'ts' : 'js';
+    
+    const i18nConfig = `import { addMessages, init, getLocaleFromNavigator } from 'svelte-i18n';
+
+import en from './locales/en.json';
+import es from './locales/es.json';
+
+addMessages('en', en);
+addMessages('es', es);
+
+init({
+  fallbackLocale: 'en',
+  initialLocale: getLocaleFromNavigator()
+});
+`;
+
+    writeFileSync(join(i18nDir, `index.${ext}`), i18nConfig);
+  }
+
+  /**
+   * Create Solid i18n configuration using @solid-primitives/i18n
+   */
+  private createSolidI18nConfig(i18nDir: string): void {
+    const ext = this.options.typescript ? 'ts' : 'js';
+    
+    const i18nConfig = this.options.typescript
+      ? `import { createSignal } from 'solid-js';
+import en from './locales/en.json';
+import es from './locales/es.json';
+
+type Locale = 'en' | 'es';
+type TranslationKey = string;
+
+const translations: Record<Locale, Record<string, any>> = {
+  en,
+  es
+};
+
+const [locale, setLocale] = createSignal<Locale>('en');
+
+export const t = (key: TranslationKey): string => {
+  const keys = key.split('.');
+  let value: any = translations[locale()];
+  
+  for (const k of keys) {
+    value = value?.[k];
+  }
+  
+  return value || key;
+};
+
+export const changeLanguage = (lng: Locale) => {
+  setLocale(lng);
+};
+
+export { locale };
+`
+      : `import { createSignal } from 'solid-js';
+import en from './locales/en.json';
+import es from './locales/es.json';
+
+const translations = {
+  en,
+  es
+};
+
+const [locale, setLocale] = createSignal('en');
+
+export const t = (key) => {
+  const keys = key.split('.');
+  let value = translations[locale()];
+  
+  for (const k of keys) {
+    value = value?.[k];
+  }
+  
+  return value || key;
+};
+
+export const changeLanguage = (lng) => {
+  setLocale(lng);
+};
+
+export { locale };
+`;
+
+    writeFileSync(join(i18nDir, `index.${ext}`), i18nConfig);
+  }
+
+  /**
+   * Create Vanilla JS i18n configuration
+   */
+  private createVanillaI18nConfig(i18nDir: string): void {
+    const ext = this.options.typescript ? 'ts' : 'js';
+    
+    const i18nConfig = this.options.typescript
+      ? `import en from './locales/en.json';
+import es from './locales/es.json';
+
+type Locale = 'en' | 'es';
+
+const translations: Record<Locale, Record<string, any>> = {
+  en,
+  es
+};
+
+let currentLocale: Locale = 'en';
+
+export const t = (key: string): string => {
+  const keys = key.split('.');
+  let value: any = translations[currentLocale];
+  
+  for (const k of keys) {
+    value = value?.[k];
+  }
+  
+  return value || key;
+};
+
+export const changeLanguage = (lng: Locale) => {
+  currentLocale = lng;
+};
+
+export const getLocale = (): Locale => currentLocale;
+`
+      : `import en from './locales/en.json';
+import es from './locales/es.json';
+
+const translations = {
+  en,
+  es
+};
+
+let currentLocale = 'en';
+
+export const t = (key) => {
+  const keys = key.split('.');
+  let value = translations[currentLocale];
+  
+  for (const k of keys) {
+    value = value?.[k];
+  }
+  
+  return value || key;
+};
+
+export const changeLanguage = (lng) => {
+  currentLocale = lng;
+};
+
+export const getLocale = () => currentLocale;
+`;
+
+    writeFileSync(join(i18nDir, `index.${ext}`), i18nConfig);
   }
 
   /**
@@ -1051,13 +1946,20 @@ ${gradient.rainbow('🎉 Success!')} Created ${chalk.cyan(this.options.name)} at
 
   /**
    * Cleanup on failure
+   * Removes the partially created project directory and reports the result
    */
   private cleanup(): void {
-    if (existsSync(this.projectPath)) {
-      try {
-        rmSync(this.projectPath, { recursive: true, force: true });
-      } catch (error: any) {
-        console.error(`Failed to clean up: ${error.message}`);
+    const result = cleanupProject(this.projectPath);
+    
+    if (result.existed) {
+      if (result.success) {
+        console.log(chalk.yellow(`\n🧹 Cleaned up partial project at: ${this.projectPath}`));
+      } else {
+        console.error(chalk.red(`\n⚠️ Failed to clean up partial project at: ${this.projectPath}`));
+        if (result.error) {
+          console.error(chalk.red(`   Error: ${result.error}`));
+        }
+        console.log(chalk.yellow(`   Please manually remove the directory: rm -rf "${this.projectPath}"`));
       }
     }
   }
@@ -1072,11 +1974,11 @@ async function main(): Promise<void> {
   program
     .name('create-viant-app')
     .description('Create a new Viant app with zero configuration')
-    .version('2.0.0')
+    .version('2.0.1')
     .argument('[project-name]', 'name of the project')
     .option('-t, --template <template>', 'template to use (default, minimal)')
     .option('-s, --styling <styling>', 'styling solution (tailwind, styled-components, css-modules, sass)')
-    .option('-pm, --package-manager <pm>', 'package manager to use (bun, npm, pnpm, yarn)')
+    .option('-p, --package-manager <pm>', 'package manager to use (bun, npm, pnpm, yarn)')
     .option('--skip-install', 'skip dependency installation')
     .option('--skip-git', 'skip git initialization')
     .option('--skip-dev', 'skip starting development server')

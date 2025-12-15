@@ -1,51 +1,44 @@
 {
-    "name": "viant",
-    "version": "1.0.0",
-    "scripts": {
-        "dev": "vite",
-        "build": "tsc && vite build",
-        "preview": "vite preview",
-        "test": "vitest",
-        "test:ui": "vitest --ui",
-        "test:coverage": "vitest --coverage",
-        "lint": "biome check src",
-        "lint:fix": "biome check --apply src",
-        "format": "biome format --write src",
-        "type-check": "tsc --noEmit",
-        "bundle-analyze": "npx vite-bundle-analyzer",
-        "clean": "rm -rf dist node_modules/.vite",
-        "setup": "./scripts/setup.sh",
-        "deploy": "./scripts/deploy.sh"
-    },
-    "dependencies": {
-        "react": "^18.2.0",
-        "react-dom": "^18.2.0"
-    },
-    "devDependencies": {
-        "@biomejs/biome": "^1.4.1",
-        "@testing-library/jest-dom": "^6.1.5",
-        "@testing-library/react": "^14.1.2",
-        "@types/node": "^22.15.21",
-        "@types/react": "^18.2.45",
-        "@types/react-dom": "^18.2.18",
-        "@vitejs/plugin-react-swc": "^3.5.0",
-        "autoprefixer": "^10.4.16",
-        "happy-dom": "^12.10.3",
-        "husky": "^8.0.3",
-        "lint-staged": "^15.2.0",
-        "postcss": "^8.4.32",
-        "tailwindcss": "^3.3.6",
-        "typescript": "^5.3.3",
-        "vite": "^5.0.8",
-        "vite-plugin-pwa": "^0.17.4",
-        "vitest": "^1.1.0"
-    },
-    "description": "<p align=\"center\">   <img src=\"https://via.placeholder.com/200x200?text=Viant\" alt=\"Viant Logo\" width=\"200\" height=\"200\"> </p>",
-    "main": "index.js",
-    "directories": {
-        "doc": "docs"
-    },
-    "keywords": [],
-    "author": "Rakha Viantoni",
-    "license": "ISC"
+  "name": "viant",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "lint": "biome check src",
+    "lint:fix": "biome check --write src",
+    "format": "biome format --write src",
+    "bundle-analyze": "npx vite-bundle-analyzer",
+    "clean": "rm -rf dist node_modules/.vite",
+    "setup": "./scripts/setup.sh",
+    "deploy": "./scripts/deploy.sh"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.2.0",
+    "@vitejs/plugin-react-swc": "^3.7.2",
+    "autoprefixer": "^10.4.20",
+    "happy-dom": "^16.6.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.3.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^4.0.0",
+    "vite": "^6.0.7",
+    "vite-plugin-pwa": "^0.21.1",
+    "vitest": "^3.0.2"
+  },
+  "description": "Modern React app built with Viant CLI",
+  "keywords": ["react", "vite", "javascript"],
+  "author": "",
+  "license": "MIT"
 }

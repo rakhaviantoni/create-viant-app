@@ -1,11 +1,23 @@
-# Viant - Modern Web App Builder
+# 🚀 Viant - Modern Web App Builder
 
 <p align="center">
-  <img src="./public/create-viant-app.png" alt="Viant Logo">
+  <img src="./public/create-viant-app.png" alt="Viant Logo" width="200">
 </p>
 
 <p align="center">
-  <strong>Create modern web apps with Vite - choose between TypeScript or JavaScript templates for React, Preact, Vue, Svelte, Solid, or Vanilla, with optional Tailwind CSS and PWA support</strong>
+  <strong>Create modern web apps instantly with Vite - Multi-framework support with the latest technologies</strong>
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/create-viant-app">
+    <img src="https://img.shields.io/npm/v/create-viant-app.svg" alt="npm version">
+  </a>
+  <a href="https://www.npmjs.com/package/create-viant-app">
+    <img src="https://img.shields.io/npm/dm/create-viant-app.svg" alt="npm downloads">
+  </a>
+  <a href="https://github.com/rakhaviantoni/create-viant-app/blob/main/LICENSE">
+    <img src="https://img.shields.io/npm/l/create-viant-app.svg" alt="license">
+  </a>
 </p>
 
 <p align="center">
@@ -19,24 +31,44 @@
 
 ## ✨ Introduction
 
-Viant is a modern, fast, and lightweight web application template builder designed to get you up and running with a well-structured application in seconds. It supports various frameworks like React, Preact, Vue, Svelte, Solid, and Vanilla JavaScript/TypeScript. It leverages the latest technologies and best practices to provide an exceptional developer experience.
+Viant is a modern, fast, and lightweight CLI tool that scaffolds web applications with the latest technologies. Built for developers who want to start projects quickly without compromising on modern best practices. 
+
+**🎯 Why Viant?**
+- **Latest Technologies**: React 19, Vue 3.5, Svelte 5, Vite 6, TypeScript 5.7
+- **Multi-Framework**: Support for 6 popular frameworks with TypeScript/JavaScript options
+- **Modern Styling**: Tailwind CSS 4, styled-components, UnoCSS, and more
+- **Rich Features**: PWA, testing, linting, state management, API clients
+- **Zero Configuration**: Works out of the box with sensible defaults
+- **Fast Setup**: Get a production-ready app in under 30 seconds
 
 ## 🚀 Quick Start
 
 ### Create Your App
 
 ```bash
-# Using Bun (recommended - fastest)
-bun create viant-app my-awesome-app
-
-# Using npm
+# Using npm (most compatible)
 npm create viant-app my-awesome-app
 
-# Using pnpm
+# Using pnpm (fast and efficient)
 pnpm create viant-app my-awesome-app
 
-# Using yarn
+# Using yarn (classic)
 yarn create viant-app my-awesome-app
+
+# Using bun (fastest)
+bun create viant-app my-awesome-app
+```
+
+### Non-Interactive Mode
+
+```bash
+# Skip prompts with CLI flags
+npm create viant-app my-app \
+  --template react-ts \
+  --styling tailwind \
+  --package-manager npm \
+  --skip-git \
+  --skip-install
 ```
 
 ### Interactive Setup
@@ -58,14 +90,16 @@ bun dev  # or npm run dev
 
 | Feature | Technology | Description |
 |---------|------------|-------------|
-| **Framework** | React 18 | Latest features with concurrent rendering |
-| **Build Tool** | Vite | Lightning-fast HMR and optimized builds |
-| **Language** | TypeScript/JavaScript (JSX) | Type safety and better developer experience/Modern JavaScript with JSX syntax |
-| **Styling** | TailwindCSS | Utility-first, highly customizable CSS |
-| **Linting** | Biome | Modern, fast, and opinionated linter and formatter |
-| **Testing** | Vitest | Fast unit testing with React Testing Library |
-| **Optimization** | Built-in | Code splitting, tree shaking, and more |
-| **DevEx** | Scripts | Helper scripts for development and deployment |
+| **Frameworks** | React 19, Vue 3.5, Svelte 5, Solid 1.9, Preact 10.25 | Latest versions with modern features |
+| **Build Tool** | Vite 6 | Lightning-fast HMR and optimized builds |
+| **Languages** | TypeScript 5.7 / JavaScript | Full type safety or modern JS with JSX |
+| **Styling** | Tailwind CSS 4, styled-components, UnoCSS | Modern CSS solutions |
+| **Linting** | Biome 1.9 | Fast, modern linter and formatter |
+| **Testing** | Vitest 3, Playwright 1.49 | Unit and E2E testing |
+| **State Management** | Redux Toolkit, Zustand, Jotai, Pinia | Modern state solutions |
+| **API Clients** | TanStack Query, SWR, Axios | Data fetching libraries |
+| **PWA Support** | Vite PWA Plugin | Offline-first web apps |
+| **Package Managers** | npm, pnpm, yarn, bun | Auto-detection and support |
 
 ## 📋 Templates
 
@@ -520,9 +554,81 @@ bun build && npx vite-bundle-analyzer dist
 - **Flexible** - No opinionated routing
 - **Faster Dev** - Instant HMR with Vite
 
+## 🔧 Troubleshooting
+
+### Common Issues
+
+#### "ENOENT: no such file or directory" errors
+- **Solution**: Make sure you're using the latest version: `npm create viant-app@latest`
+- **Cause**: Older versions had font file dependencies that are now resolved
+
+#### Package manager not detected
+- **Solution**: Install your preferred package manager globally
+- **Example**: `npm install -g pnpm` or `npm install -g yarn`
+
+#### Permission errors on macOS/Linux
+- **Solution**: Use `sudo` if needed, or fix npm permissions
+- **Guide**: https://docs.npmjs.com/resolving-eacces-permissions-errors
+
+#### Build fails after project creation
+- **Solution**: Delete `node_modules` and reinstall: `rm -rf node_modules && npm install`
+- **Alternative**: Try a different package manager
+
+#### TypeScript errors in generated project
+- **Solution**: Run `npm run type-check` to see specific issues
+- **Common fix**: Update `@types/*` packages to latest versions
+
+### Getting Help
+
+- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/rakhaviantoni/create-viant-app/issues)
+- 💬 **Questions**: [GitHub Discussions](https://github.com/rakhaviantoni/create-viant-app/discussions)
+- 📧 **Email**: [rakhaviantoni@gmail.com](mailto:rakhaviantoni@gmail.com)
+
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+We welcome contributions! Here's how you can help:
+
+1. **Fork** the repository
+2. **Create** a feature branch: `git checkout -b feature/amazing-feature`
+3. **Commit** your changes: `git commit -m 'Add amazing feature'`
+4. **Push** to the branch: `git push origin feature/amazing-feature`
+5. **Open** a Pull Request
+
+### Development Setup
+
+```bash
+# Clone the repo
+git clone https://github.com/rakhaviantoni/create-viant-app.git
+cd create-viant-app
+
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Build the CLI
+npm run build
+
+# Test locally
+node dist/index.js test-project
+```
+
+## 📊 Stats
+
+- **Package Size**: ~152KB (compressed)
+- **Templates**: 12 framework combinations
+- **Dependencies**: Modern, actively maintained
+- **Node.js**: Requires Node.js 18+ 
+- **Platforms**: macOS, Linux, Windows
+
+## 🗺️ Roadmap
+
+- [ ] **More Frameworks**: Qwik, Astro support
+- [ ] **Database Integration**: Prisma, Drizzle templates
+- [ ] **Deployment**: One-click deploy to Vercel, Netlify
+- [ ] **Monorepo**: Nx, Turborepo templates
+- [ ] **Mobile**: React Native, Capacitor integration
 
 ## 📄 License
 
@@ -530,4 +636,12 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**Built with ❤️ by Rakha Viantoni**
+<p align="center">
+  <strong>Built with ❤️ by <a href="https://github.com/rakhaviantoni">Rakha Viantoni</a></strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/rakhaviantoni/create-viant-app">⭐ Star on GitHub</a> •
+  <a href="https://www.npmjs.com/package/create-viant-app">📦 View on npm</a> •
+  <a href="https://github.com/rakhaviantoni/create-viant-app/issues">🐛 Report Bug</a>
+</p>

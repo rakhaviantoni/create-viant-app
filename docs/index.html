@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viant - Modern Web App Builder</title>
+    <meta name="description" content="Create modern web apps instantly with Vite. Multi-framework support for React, Vue, Svelte, Solid, Preact, and Vanilla.">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+</head>
+<body class="bg-gray-900 text-white">
+    <!-- Header -->
+    <header class="bg-gray-800 shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <span class="text-3xl">🚀</span>
+                    <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                        Viant
+                    </h1>
+                </div>
+                <nav class="hidden md:flex space-x-6">
+                    <a href="#features" class="hover:text-blue-400 transition-colors">Features</a>
+                    <a href="#templates" class="hover:text-blue-400 transition-colors">Templates</a>
+                    <a href="#docs" class="hover:text-blue-400 transition-colors">Docs</a>
+                    <a href="https://github.com/rakhaviantoni/create-viant-app" class="hover:text-blue-400 transition-colors">GitHub</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="py-20 bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                Modern Web Apps, Instantly
+            </h2>
+            <p class="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
+                Create production-ready web applications with the latest technologies. 
+                Multi-framework support with zero configuration.
+            </p>
+            
+            <!-- Command showcase -->
+            <div class="bg-gray-800 rounded-lg p-6 mb-8 max-w-2xl mx-auto">
+                <div class="text-left">
+                    <div class="text-green-400 mb-2">$ npm create viant-app my-awesome-app</div>
+                    <div class="text-gray-400 text-sm">✨ Choose framework, styling, features...</div>
+                    <div class="text-gray-400 text-sm">🚀 Ready to code in 30 seconds!</div>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#get-started" class="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-lg font-semibold transition-colors">
+                    Get Started
+                </a>
+                <a href="https://github.com/rakhaviantoni/create-viant-app" class="border border-gray-600 hover:border-gray-500 px-8 py-3 rounded-lg font-semibold transition-colors">
+                    View on GitHub
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-gray-800">
+        <div class="container mx-auto px-6">
+            <h3 class="text-4xl font-bold text-center mb-12">Why Choose Viant?</h3>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="text-center p-6">
+                    <div class="text-4xl mb-4">⚡</div>
+                    <h4 class="text-xl font-semibold mb-3">Lightning Fast</h4>
+                    <p class="text-gray-400">Powered by Vite 6 for instant HMR and optimized builds. Get your app running in seconds.</p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="text-4xl mb-4">🎯</div>
+                    <h4 class="text-xl font-semibold mb-3">Latest Technologies</h4>
+                    <p class="text-gray-400">React 19, Vue 3.5, Svelte 5, TypeScript 5.7, Tailwind CSS 4, and more cutting-edge tools.</p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="text-4xl mb-4">🛠️</div>
+                    <h4 class="text-xl font-semibold mb-3">Zero Configuration</h4>
+                    <p class="text-gray-400">Sensible defaults with the flexibility to customize. No complex setup required.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Templates Section -->
+    <section id="templates" class="py-20 bg-gray-900">
+        <div class="container mx-auto px-6">
+            <h3 class="text-4xl font-bold text-center mb-12">Supported Frameworks</h3>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-colors">
+                    <div class="flex items-center mb-3">
+                        <span class="text-2xl mr-3">⚛️</span>
+                        <h4 class="text-xl font-semibold">React</h4>
+                    </div>
+                    <p class="text-gray-400 mb-3">Latest React 19 with concurrent features</p>
+                    <div class="text-sm text-blue-400">TypeScript • JavaScript</div>
+                </div>
+                <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-colors">
+                    <div class="flex items-center mb-3">
+                        <span class="text-2xl mr-3">💚</span>
+                        <h4 class="text-xl font-semibold">Vue</h4>
+                    </div>
+                    <p class="text-gray-400 mb-3">Vue 3.5 with Composition API</p>
+                    <div class="text-sm text-green-400">TypeScript • JavaScript</div>
+                </div>
+                <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-colors">
+                    <div class="flex items-center mb-3">
+                        <span class="text-2xl mr-3">🔥</span>
+                        <h4 class="text-xl font-semibold">Svelte</h4>
+                    </div>
+                    <p class="text-gray-400 mb-3">Svelte 5 with runes and modern features</p>
+                    <div class="text-sm text-orange-400">TypeScript • JavaScript</div>
+                </div>
+                <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-colors">
+                    <div class="flex items-center mb-3">
+                        <span class="text-2xl mr-3">💎</span>
+                        <h4 class="text-xl font-semibold">Solid</h4>
+                    </div>
+                    <p class="text-gray-400 mb-3">SolidJS 1.9 with fine-grained reactivity</p>
+                    <div class="text-sm text-purple-400">TypeScript • JavaScript</div>
+                </div>
+                <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-colors">
+                    <div class="flex items-center mb-3">
+                        <span class="text-2xl mr-3">🪶</span>
+                        <h4 class="text-xl font-semibold">Preact</h4>
+                    </div>
+                    <p class="text-gray-400 mb-3">Preact 10.25 - lightweight React alternative</p>
+                    <div class="text-sm text-cyan-400">TypeScript • JavaScript</div>
+                </div>
+                <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-colors">
+                    <div class="flex items-center mb-3">
+                        <span class="text-2xl mr-3">🍦</span>
+                        <h4 class="text-xl font-semibold">Vanilla</h4>
+                    </div>
+                    <p class="text-gray-400 mb-3">Pure JavaScript/TypeScript with Vite</p>
+                    <div class="text-sm text-yellow-400">TypeScript • JavaScript</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Get Started Section -->
+    <section id="get-started" class="py-20 bg-gray-800">
+        <div class="container mx-auto px-6 text-center">
+            <h3 class="text-4xl font-bold mb-8">Ready to Build?</h3>
+            <p class="text-xl text-gray-300 mb-8">Get started with Viant in less than a minute</p>
+            
+            <div class="max-w-4xl mx-auto">
+                <div class="grid md:grid-cols-2 gap-8 mb-8">
+                    <div class="bg-gray-900 p-6 rounded-lg">
+                        <h4 class="text-lg font-semibold mb-4 text-blue-400">Interactive Mode</h4>
+                        <div class="bg-black p-4 rounded text-left text-sm font-mono">
+                            <div class="text-green-400">$ npm create viant-app my-app</div>
+                            <div class="text-gray-400 mt-2">✨ Follow the prompts to customize your app</div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-900 p-6 rounded-lg">
+                        <h4 class="text-lg font-semibold mb-4 text-purple-400">Non-Interactive Mode</h4>
+                        <div class="bg-black p-4 rounded text-left text-sm font-mono">
+                            <div class="text-green-400">$ npm create viant-app my-app \</div>
+                            <div class="text-green-400">  --template react-ts \</div>
+                            <div class="text-green-400">  --styling tailwind</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <a href="https://www.npmjs.com/package/create-viant-app" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-semibold transition-colors">
+                        <span class="mr-2">📦</span>
+                        View on npm
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 py-12 border-t border-gray-800">
+        <div class="container mx-auto px-6">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <span class="text-2xl">🚀</span>
+                        <span class="text-xl font-bold">Viant</span>
+                    </div>
+                    <p class="text-gray-400">Modern web app builder for the next generation of developers.</p>
+                </div>
+                <div>
+                    <h5 class="font-semibold mb-3">Resources</h5>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="https://github.com/rakhaviantoni/create-viant-app" class="hover:text-white">Documentation</a></li>
+                        <li><a href="https://github.com/rakhaviantoni/create-viant-app/examples" class="hover:text-white">Examples</a></li>
+                        <li><a href="https://github.com/rakhaviantoni/create-viant-app/issues" class="hover:text-white">Support</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-semibold mb-3">Community</h5>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="https://github.com/rakhaviantoni/create-viant-app" class="hover:text-white">GitHub</a></li>
+                        <li><a href="https://www.npmjs.com/package/create-viant-app" class="hover:text-white">npm</a></li>
+                        <li><a href="https://github.com/rakhaviantoni/create-viant-app/discussions" class="hover:text-white">Discussions</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-semibold mb-3">Package Managers</h5>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li>npm create viant-app</li>
+                        <li>pnpm create viant-app</li>
+                        <li>yarn create viant-app</li>
+                        <li>bun create viant-app</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2025 Viant. Built with ❤️ by <a href="https://github.com/rakhaviantoni" class="text-blue-400 hover:text-blue-300">Rakha Viantoni</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html>

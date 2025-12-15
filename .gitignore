@@ -1,10 +1,17 @@
-# Dependency directories
+# Dependencies
 node_modules/
+.pnp
+.pnp.js
 
-# Lock files
-bun.lockb
-pnpm-lock.yaml
-package-lock.json
+# Production builds
+dist/
+build/
+out/
+
+# Development
+.cache/
+.parcel-cache/
+.vite/
 
 # Environment variables
 .env
@@ -12,17 +19,32 @@ package-lock.json
 .env.development
 .env.test
 .env.production
+.env*.local
 
-# Build directories
-dist/
-build/
-
-# Debug logs
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# IDE specific files
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+.nyc_output/
+
+# Test artifacts
+test-results/
+playwright-report/
+test-results.xml
+
+# IDE and editor files
 .vscode/
 .idea/
 *.suo
@@ -30,6 +52,7 @@ yarn-error.log*
 *.njsproj
 *.sln
 *.sw?
+*~
 
 # OS generated files
 .DS_Store
@@ -39,7 +62,57 @@ yarn-error.log*
 .Trashes
 ehthumbs.db
 Thumbs.db
+Desktop.ini
 
-# Temp files
+# Temporary files
 *.tmp
+*.temp
 *.bak
+*.swp
+*.swo
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# Yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Test projects created during development
+test-*
+demo-*
+example-*
+my-*-app
+
+# CLI testing artifacts
+create-viant-app-*.tgz
