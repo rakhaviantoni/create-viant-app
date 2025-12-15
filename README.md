@@ -582,7 +582,7 @@ bun build && npx vite-bundle-analyzer dist
 
 - 🐛 **Bug Reports**: [GitHub Issues](https://github.com/rakhaviantoni/create-viant-app/issues)
 - 💬 **Questions**: [GitHub Discussions](https://github.com/rakhaviantoni/create-viant-app/discussions)
-- 📧 **Email**: [rakhaviantoni@gmail.com](mailto:rakhaviantoni@gmail.com)
+- 📧 **Email**: [halo@rakhaviantoni.com](mailto:halo@rakhaviantoni.com)
 
 ## 🤝 Contributing
 

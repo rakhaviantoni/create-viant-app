@@ -175,7 +175,7 @@ Releases are handled by maintainers:
 
 - 🐛 **Bug Reports**: [GitHub Issues](https://github.com/rakhaviantoni/create-viant-app/issues)
 - 💬 **Questions**: [GitHub Discussions](https://github.com/rakhaviantoni/create-viant-app/discussions)
-- 📧 **Email**: [rakhaviantoni@gmail.com](mailto:rakhaviantoni@gmail.com)
+- 📧 **Email**: [halo@rakhaviantoni.com](mailto:halo@rakhaviantoni.com)
 
 ## 📄 License
 

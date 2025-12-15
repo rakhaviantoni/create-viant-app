@@ -17,7 +17,7 @@ We take security vulnerabilities seriously. If you discover a security vulnerabi
 
 **Please do NOT report security vulnerabilities through public GitHub issues.**
 
-Instead, please report them via email to: **[rakhaviantoni@gmail.com](mailto:rakhaviantoni@gmail.com)**
+Instead, please report them via email to: **[halo@rakhaviantoni.com](mailto:halo@rakhaviantoni.com)**
 
 Include the following information:
 - Description of the vulnerability
@@ -88,7 +88,7 @@ This policy does NOT cover:
 ### Contact
 
 For security-related questions or concerns:
-- **Email**: [rakhaviantoni@gmail.com](mailto:rakhaviantoni@gmail.com)
+- **Email**: [halo@rakhaviantoni.com](mailto:halo@rakhaviantoni.com)
 - **Subject**: [SECURITY] Viant - [Brief Description]
 
 Thank you for helping keep Viant and our community safe! 🔒
