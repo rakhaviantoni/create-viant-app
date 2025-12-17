@@ -5,6 +5,7 @@ import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs';
 import pkg from 'fs-extra';
 const { copySync } = pkg;
 import { resolve, join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { Command } from 'commander';
 import prompts from 'prompts';
 import chalk from 'chalk';
@@ -25,8 +26,12 @@ import {
   wrapError,
 } from './src/errorHandling.js';
 
-// Get current directory using process.cwd() as fallback
-const __dirname = process.cwd();
+// Get the directory where this script is located (package installation directory)
+// This is needed to find the templates directory when installed globally via npm
+const __filename = fileURLToPath(import.meta.url);
+const __scriptDir = dirname(__filename);
+// Templates are in the parent directory of dist/ (where the bundled CLI lives)
+const __dirname = resolve(__scriptDir, '..');
 
 // Enhanced ASCII Art Banner with gradients
 const createBanner = () => {
@@ -1974,7 +1979,7 @@ async function main(): Promise<void> {
   program
     .name('create-viant-app')
     .description('Create a new Viant app with zero configuration')
-    .version('2.0.1')
+    .version('1.0.0')
     .argument('[project-name]', 'name of the project')
     .option('-t, --template <template>', 'template to use (default, minimal)')
     .option('-s, --styling <styling>', 'styling solution (tailwind, styled-components, css-modules, sass)')
